@@ -353,7 +353,23 @@
 
 	const addSrc = (node) => {
 		addAttributes(node, activeItem.attr)
-		node.srcset = activeItem.img
+		node.src = activeItem.fallback ? activeItem.fallback : activeItem.img
+
+		const pictureElement = node.closest('picture')
+		if (activeItem.sources) {
+			appendToPicture('source', activeItem.sources, pictureElement, node)
+		}
+	}
+
+	const appendToPicture = (tag, arr, pictureElement, imgElement) => {
+		if (!Array.isArray(arr)) {
+			arr = JSON.parse(arr)
+		}
+		for (const obj of arr) {
+			const el = document.createElement(tag)
+			addAttributes(el, obj)
+			pictureElement.insertBefore(el, imgElement)
+		}
 	}
 </script>
 
@@ -381,13 +397,15 @@
 		"
 	>
 		{#if loaded}
-			<img
-				use:addSrc
-				sizes={opts.sizes || `${sizes}px`}
-				alt={activeItem.alt}
-				on:error={(error) => opts.onError?.(container, activeItem, error)}
-				out:fly|global
-			/>
+			<picture>
+				<img
+					use:addSrc
+					sizes={opts.sizes || `${sizes}px`}
+					alt={activeItem.alt}
+					on:error={(error) => opts.onError?.(container, activeItem, error)}
+					out:fly|global
+				/>
+			</picture>
 		{/if}
 		{#if showLoader}
 			<Loading {activeItem} {loaded} />
