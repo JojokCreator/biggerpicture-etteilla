@@ -9,7 +9,6 @@
 	import { writable } from 'svelte/store'
 	import { closing } from './stores'
 	import { listen, element as createEl } from 'svelte/internal'
-
 	/** items currently displayed in gallery */
 	export let items = undefined
 
@@ -236,14 +235,15 @@
 		const scaleHeight = rect.height / dimensions[1]
 
 		return {
-			duration: 480,
+			duration: 600,
 			easing: cubicOut,
 			css: (t, u) => {
-				return `transform:translate3d(${leftOffset * u}px, ${
-					centerTop * u
-				}px, 0) scale3d(${scaleWidth + t * (1 - scaleWidth)}, ${
-					scaleHeight + t * (1 - scaleHeight)
-				}, 1)`
+				const opacity = t // Fade out effect
+				return `
+				transform: translate3d(${leftOffset * u}px, ${centerTop * u}px, 0) 
+					scale3d(${scaleWidth + t * (1 - scaleWidth)}, ${scaleHeight + t * (1 - scaleHeight)}, 1);
+				opacity: ${opacity};
+			`
 			},
 		}
 	}
