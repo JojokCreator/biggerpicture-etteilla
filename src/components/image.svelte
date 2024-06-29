@@ -8,11 +8,34 @@
 	} from '../stores'
 	import { fly } from 'svelte/transition'
 	import Loading from './loading.svelte'
+	import { writable } from 'svelte/store'
 
 	export let props
 	export let smallScreen
 
 	let { activeItem, opts, prev, next, zoomed, container } = props
+
+	const thumbBoxPosition = writable([0, 0])
+	const thumbBoxSize = writable([100, 100]) // Initial size set to [100, 100]
+
+	$: {
+		const [imgWidth, imgHeight] = $imageDimensions
+		// Calculate thumb width and height based on initial conditions
+
+		// Calculate thumb position based on zoom translate
+		const [zoomX, zoomY] = $zoomDragTranslate
+		const thumbLeft = (-zoomX / imgWidth) * 100
+		const thumbTop = (-zoomY / imgHeight) * 100
+
+		// Calculate thumb width and height based on zoom
+		const baseThumbSize = 100 // Initial base thumb size
+		const zoomFactor = 1 + Math.abs(zoomX / imgWidth) * 1.05 // Adjust factor as needed
+		const thumbWidth = baseThumbSize / zoomFactor
+		const thumbHeight = baseThumbSize / zoomFactor
+		// Update writable stores with new thumb size and position
+		thumbBoxSize.set([thumbWidth, thumbHeight])
+		thumbBoxPosition.set([thumbLeft, thumbTop])
+	}
 
 	let maxZoom = activeItem.maxZoom || opts.maxZoom || 10
 
@@ -374,7 +397,7 @@
 </script>
 
 <div
-	class="bp-img-wrap"
+	class="bp-img-wrap relative"
 	on:wheel={onWheel}
 	on:pointerdown={onPointerDown}
 	on:pointermove={onPointerMove}
@@ -382,6 +405,13 @@
 	on:pointercancel={removeEventFromCache}
 	class:bp-close={closingWhileZoomed}
 >
+	<div class="bp-preview">
+		<img src={activeItem.img} alt="thumbnail" class="bp-zoom-img" />
+		<div
+			class="bp-preview-box"
+			style="left:{$thumbBoxPosition[0]}%; top:{$thumbBoxPosition[1]}%; width:{$thumbBoxSize[0]}%; height:{$thumbBoxSize[1]}%;"
+		></div>
+	</div>
 	<div
 		use:onMount
 		class="bp-img"

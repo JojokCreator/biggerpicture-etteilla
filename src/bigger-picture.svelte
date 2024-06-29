@@ -348,7 +348,8 @@
 		<div class="bp-controls" out:fly|local>
 			<!-- close button -->
 			<button class="bp-x" title="Close" aria-label="Close" on:click={close} />
-
+			<button class="bp-share" title="Share" aria-label="Share" />
+			<button class="bp-info" title="Info" aria-label="Info" />
 			{#if items.length > 1}
 				<!-- counter -->
 				<div class="bp-count">
