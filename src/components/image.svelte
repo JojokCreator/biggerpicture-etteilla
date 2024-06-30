@@ -8,34 +8,51 @@
 	} from '../stores'
 	import { fly } from 'svelte/transition'
 	import Loading from './loading.svelte'
-	import { writable } from 'svelte/store'
+	import { writable, get } from 'svelte/store'
 
 	export let props
 	export let smallScreen
+	let width = 0
+	let height = 0
 
-	let { activeItem, opts, prev, next, zoomed, container } = props
-
-	const thumbBoxPosition = writable([0, 0])
-	const thumbBoxSize = writable([100, 100]) // Initial size set to [100, 100]
+	let previewBoxStyle = `
+        left: 0%;
+        top: 0%;
+        width: 100%;
+        height: 100%;
+    `
 
 	$: {
-		const [imgWidth, imgHeight] = $imageDimensions
-		// Calculate thumb width and height based on initial conditions
+		const aspectRatio = activeItem.height / activeItem.width
+		const thumbnailWidth = 176 // Given width of the thumbnail
 
-		// Calculate thumb position based on zoom translate
-		const [zoomX, zoomY] = $zoomDragTranslate
-		const thumbLeft = (-zoomX / imgWidth) * 100
-		const thumbTop = (-zoomY / imgHeight) * 100
+		const previewWidth = (100 * width) / $imageDimensions[0] + 10
+		const previewHeight = (100 * height) / $imageDimensions[1] + 10
 
-		// Calculate thumb width and height based on zoom
-		const baseThumbSize = 100 // Initial base thumb size
-		const zoomFactor = 1 + Math.abs(zoomX / imgWidth) * 1.05 // Adjust factor as needed
-		const thumbWidth = baseThumbSize / zoomFactor
-		const thumbHeight = baseThumbSize / zoomFactor
-		// Update writable stores with new thumb size and position
-		thumbBoxSize.set([thumbWidth, thumbHeight])
-		thumbBoxPosition.set([thumbLeft, thumbTop])
+		let previewLeft =
+			(100 * (-$zoomDragTranslate[0] + (width / thumbnailWidth) * 100)) /
+				width -
+			50
+		let previewTop =
+			(100 *
+				(-$zoomDragTranslate[1] +
+					(height / thumbnailWidth) * aspectRatio * 100)) /
+				height -
+			50
+
+		// Ensure preview box stays within image
+		previewLeft = Math.max(0, Math.min(previewLeft, 100 - previewWidth))
+		previewTop = Math.max(0, Math.min(previewTop, 100 - previewHeight))
+
+		previewBoxStyle = `
+            left: ${previewLeft}%;
+            top: ${previewTop}%;
+            width: ${previewWidth}%;
+            height: ${previewHeight}%;
+        `
 	}
+
+	let { activeItem, opts, prev, next, zoomed, container } = props
 
 	let maxZoom = activeItem.maxZoom || opts.maxZoom || 10
 
@@ -398,6 +415,8 @@
 
 <div
 	class="bp-img-wrap relative"
+	bind:clientHeight={height}
+	bind:clientWidth={width}
 	on:wheel={onWheel}
 	on:pointerdown={onPointerDown}
 	on:pointermove={onPointerMove}
@@ -405,12 +424,11 @@
 	on:pointercancel={removeEventFromCache}
 	class:bp-close={closingWhileZoomed}
 >
-	<div class="bp-preview">
-		<img src={activeItem.img} alt="thumbnail" class="bp-zoom-img" />
-		<div
-			class="bp-preview-box"
-			style="left:{$thumbBoxPosition[0]}%; top:{$thumbBoxPosition[1]}%; width:{$thumbBoxSize[0]}%; height:{$thumbBoxSize[1]}%;"
-		></div>
+	<div class="bp-thumb-wrapper">
+		<div class="bp-preview">
+			<img src={activeItem.img} alt="thumbnail" class="bp-zoom-img" />
+			<div class="bp-preview-box" style={previewBoxStyle}></div>
+		</div>
 	</div>
 	<div
 		use:onMount
